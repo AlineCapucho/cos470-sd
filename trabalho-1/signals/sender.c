@@ -2,7 +2,11 @@
 #include <stdio.h>
 #include <signal.h>
 #include <errno.h>
-#include "receiver.c"
+// #include "receiver.c"
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 int main() {
   int pid, signal;
@@ -25,13 +29,13 @@ int main() {
 
   if (sucess_code < 0 ) {
     switch (errno) {
-      case 'EINVAL':
+      case EINVAL:
         printf("\nSinal inexistente.");
         break;
-      case 'EPERM':
+      case EPERM:
         printf("\nOperação não permitida.");
         break;
-      case 'ESRCH':
+      case ESRCH:
         printf("\nProcesso inexistente.");
         break;
       default:
