@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
 
 int is_prime(int n) {
     int i;
@@ -15,10 +16,12 @@ int is_prime(int n) {
 }
 
 int main() {
-    int maxBuffer = 20;
-    pid_t pid;
     int fd[2]; // file descriptor
-    char buffer[maxBuffer];
+    // fd[0]: leitura
+    // fd[1]: escrita
+    pid_t pid;
+    int buffer_size = 20;
+    char buffer[buffer_size];
 
     if (pipe(fd) == -1) {
         printf("Pipe falhou.\n");
@@ -36,23 +39,42 @@ int main() {
         int n = 0;
         printf("Informe quantos números devem ser gerados: ");
         scanf("%d", &n);
-        srand(12);
+        srand(15); // random number generator seed
         int x = 1;
         char y[20];
-        write(fd[1], &x, sizeof(x));
-        for (int i=1; i != n; ++i) {
-            x = x + rand() % 99;
-            snprintf(y, 20, "%d", x);
-            write(fd[1], &y, strlen(y)+1);
+        int w;
+        // Se for necessário considerar N0, então descomentar o trecho a seguir
+        // snprintf(y, 20, "%d", x); // copy int x to char y
+        // w = write(fd[1], &y, strlen(y)+1);
+        // if (w == -1) {
+        //     printf("Write 0 falhou.\n");
+        // }
+        // sleep(1); // necessary for child to have time to read before next production
+        for (int i=0; i != n; ++i) {
+            x = x + 1 + (rand() % 99); // rand() is in {0, 1, ..., RAND_MAX}
+            snprintf(y, 20, "%d", x); // copy int x to char y
+            w = write(fd[1], &y, strlen(y)+1);
+            if (w == -1) {
+                printf("Write i={%d} falhou.\n", i);
+            }
+            sleep(1);
         }
-        write(fd[1], "0", strlen("0")+1);
+        w = write(fd[1], "0", strlen("0")+1);
+        if (w == -1) {
+            printf("Write str(0) falhou.\n");
+        }
         close(fd[1]);
+        sleep(1);
         return 0;
     } else {
         close(fd[1]);
         bool consuming = true;
+        int r;
         while (consuming) {
-            read(fd[0], buffer, maxBuffer);
+            r = read(fd[0], buffer, buffer_size);
+            if (r == -1) {
+                printf("Read falhou.\n");
+            }
             int x = atoi(buffer);
             if (x == 0) {
                 consuming = false;
@@ -62,6 +84,7 @@ int main() {
                 } else {
                     printf("O número %d não é primo.\n", x);
                 }
+                sleep(1);
             }
         }
         close(fd[0]);
