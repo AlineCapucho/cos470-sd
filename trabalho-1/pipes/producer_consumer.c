@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 
 // Função de validação de número primo
 int is_prime(int n) {
@@ -43,7 +44,7 @@ int main() {
         int n = 0;
         printf("Informe quantos números devem ser gerados: ");
         scanf("%d", &n);
-        srand(15); // random number generator seed
+        srand(time(NULL)); // random number generator seed
         int x = 1;
         char y[20];
         int w;
