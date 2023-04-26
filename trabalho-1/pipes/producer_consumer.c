@@ -6,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 
+// Função de validação de número primo
 int is_prime(int n) {
     int i;
     for (i = 2; i <= n / 2; ++i) {
@@ -71,7 +72,7 @@ int main() {
             if (r == -1) {
                 printf("Read falhou.\n");
             }
-            int x = atoi(buffer);
+            int x = atoi(buffer); // Converte valor lido do buffer para int
             if (x == 0) {
                 consuming = false;
             } else {
