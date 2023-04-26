@@ -1,12 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
-#include <errno.h>
-// #include "receiver.c"
-
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <errno.h>
 
 int main() {
   int pid, signal;
@@ -42,7 +40,7 @@ int main() {
         printf("Erro. Verifique e tente novamente.");
         break;
     }
-    return 0;
+    return -1;
   } else {
     printf("Sinal enviado ao processo com sucesso.");
     return 1;

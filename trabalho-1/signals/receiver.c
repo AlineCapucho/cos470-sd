@@ -48,6 +48,6 @@ int main() {
     default:
       printf("Modo de espera inválido.\n");
       printf("Verifique e tente novamente.\n");
-      return 0;
+      return -1;
   };
 }
