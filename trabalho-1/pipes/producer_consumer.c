@@ -46,11 +46,11 @@ int main() {
         scanf("%d", &n);
         srand(time(NULL)); // random number generator seed
         int x = 1;
-        char y[20];
+        char y[buffer_size];
         int w;
         for (int i=0; i != n; ++i) {
             x = x + 1 + (rand() % 99); // rand() is in {0, 1, ..., RAND_MAX}
-            snprintf(y, 20, "%d", x); // copy int x to char y
+            snprintf(y, buffer_size, "%d", x); // copy int x to char y
             w = write(fd[1], &y, strlen(y)+1);
             if (w == -1) {
                 printf("Write i={%d} falhou.\n", i);
