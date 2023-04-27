@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <time.h>
 
 int main() {
   // Declaração de variáveis
@@ -44,6 +45,7 @@ int main() {
   int buffer_size = 20;
   char buffer[buffer_size];
 
+  srand(time(NULL));
   int number = 1;
   char char_number;
   int client_message_status, server_message_status;

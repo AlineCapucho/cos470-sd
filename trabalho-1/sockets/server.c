@@ -55,45 +55,46 @@ int main() {
   }
   printf("Aguardando conexão.\n");
 
-  client_size = sizeof(client_address);
-  client_socket = accept(server_socket, (struct sockaddr*)&client_address, &client_size);
-  printf("Conexão estabelecida com sucesso.\n");
+  while(1) {
+    client_size = sizeof(client_address);
+    client_socket = accept(server_socket, (struct sockaddr*)&client_address, &client_size);
+    printf("Conexão estabelecida com sucesso.\n");
 
-  bool connection_open = true;
-  int client_message_status, server_message_status;
-  while(connection_open) {
-    // // Limpeza do buffer
-    memset(server_buffer, '\0', sizeof(server_buffer));
-    memset(client_buffer, '\0', sizeof(client_buffer));
+    bool connection_open = true;
+    int client_message_status, server_message_status;
+    while(connection_open) {
+      // // Limpeza do buffer
+      memset(server_buffer, '\0', sizeof(server_buffer));
+      memset(client_buffer, '\0', sizeof(client_buffer));
 
-    // Recebe mensagem do cliente
-    client_message_status = recv(client_socket, client_buffer, sizeof(client_buffer), 0);
-    if (client_message_status == -1) {
-      printf("Erro ao receber mensagem do client.\n");
-      return -1;
-    }
-
-    // Valida o número recebido pelo cliente
-    // Realiza a ação necessária dependendo do número recebido
-    int received_number = atoi(client_buffer);
-
-    if (received_number == 0) {
-      connection_open = false;
-      close(client_socket);
-      printf("Conexão encerrada.\n");
-    } else {
-      if (is_prime(received_number)) {
-        strcpy(server_buffer,  "O número é primo.\n");
+      // Recebe mensagem do cliente
+      client_message_status = recv(client_socket, client_buffer, sizeof(client_buffer), 0);
+      if (client_message_status == -1) {
+        printf("Erro ao receber mensagem do client.\n");
+        return -1;
       }
-      else {
-        strcpy(server_buffer, "O número não é primo.\n");
-      }
-      server_message_status = send(client_socket, server_buffer, sizeof(server_buffer), 0);
-      if (server_message_status == -1) {
-        printf("Erro ao enviar mensagem do server.\n");
-      }
-    }
-  };
 
+      // Valida o número recebido pelo cliente
+      // Realiza a ação necessária dependendo do número recebido
+      int received_number = atoi(client_buffer);
+
+      if (received_number == 0) {
+        connection_open = false;
+        close(client_socket);
+        printf("Conexão encerrada.\n");
+      } else {
+        if (is_prime(received_number)) {
+          strcpy(server_buffer,  "O número é primo.\n");
+        }
+        else {
+          strcpy(server_buffer, "O número não é primo.\n");
+        }
+        server_message_status = send(client_socket, server_buffer, sizeof(server_buffer), 0);
+        if (server_message_status == -1) {
+          printf("Erro ao enviar mensagem do server.\n");
+        }
+      }
+    };
+  }
   return 0;
 }
