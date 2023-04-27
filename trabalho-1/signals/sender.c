@@ -9,6 +9,7 @@
 int main() {
   int pid, signal;
 
+  // Recebe o código do sinal e PID do processo do usuários
   printf("MODO | CÓDIGO\n");
   printf("--------------\n");
   printf("SIGTERM | %d\n", SIGTERM);
@@ -23,8 +24,10 @@ int main() {
   printf("\nDigite o código do sinal: \n");
   scanf("%d", &signal);
 
+  // Envia o sinal ao processo
   int sucess_code = kill(pid, signal);
 
+  // Feedback sobre erro ou sucesso ao enviar o sinal ao processo
   if (sucess_code < 0 ) {
     switch (errno) {
       case EINVAL:
