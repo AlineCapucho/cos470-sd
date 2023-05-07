@@ -9,15 +9,30 @@
 
 // Command to compile: gcc -std=c17 -pthread producer_consumer.c -o producer_consumer 
 
+// Semáforos para coordenação e sincronização
 sem_t mutex;
 sem_t empty;
 sem_t full;
 
-int max = (int) pow(10, 7);
+int M = (int) pow(10, 5); // Número de números que devem ser consumidos
+int max = (int) pow(10, 7); // Maior valor possível de número aleatório
 
+// Buffer para armazenar números aleatórios e count para indicar último número aleatório gerado
+// O consumo de números aleatórios ocorre de forma LIFO
 int* buffer;
 int count = 0;
 
+// Função de validação de número primo
+int is_prime(int n) {
+    int i;
+    for (i = 2; i <= n / 2; ++i) {
+        if (n % i == 0)
+            return 0;
+    }
+    return 1;
+}
+
+// Produz número aleatório
 void* producer(void* ptr) {
     srand(time(NULL)); // random number generator seed
     while (1) {
@@ -31,6 +46,7 @@ void* producer(void* ptr) {
     }
 }
 
+// Consome número aleatório
 void* consumer(void* ptr) {
     int y = -1;
     while (1) {
@@ -38,12 +54,23 @@ void* consumer(void* ptr) {
         sem_wait(&mutex);
         y = buffer[count-1];
         count--;
+        if (is_prime(y)) {
+            printf("Número consumido %d é primo.\n", y);
+        }
+        else {
+            printf("Número consumido %d não é primo.\n", y);
+        }
+        M--;
+        if (M == 0) {
+            printf("Consumidores consumiram o número de índice 10^5. Encerrando programa.\n");
+            exit();
+        }
         sem_post(&mutex);
         sem_post(&empty);
-        printf("Consuming %d\n", y);
     }
 }
 
+// Inicia um vetor de threads produtores
 void init_producers_threads(pthread_t* arr, int size) {
     for (int i = 0; i < size; ++i) {
         if (pthread_create(&arr[i], NULL, &producer, NULL) != 0) {
@@ -53,6 +80,7 @@ void init_producers_threads(pthread_t* arr, int size) {
     }
 }
 
+// Inicia um vetor de threads consumidores
 void init_consumers_threads(pthread_t* arr, int size) {
     for (int i = 0; i < size; ++i) {
         if (pthread_create(&arr[i], NULL, &consumer, NULL) != 0) {
@@ -62,6 +90,7 @@ void init_consumers_threads(pthread_t* arr, int size) {
     }
 }
 
+// Aguarda a finalização de um vetor de threads
 void join_pthread_arr(pthread_t* arr, int size) {
     for (int i = 0; i < size; ++i) {
         if (pthread_join(arr[i], NULL) != 0) {
@@ -71,6 +100,7 @@ void join_pthread_arr(pthread_t* arr, int size) {
     }
 }
 
+// Printa um array
 void print_arr(signed char* arr, int size) {
     for (int i = 0; i < size; ++i) {
         if (i > 0 && i % 10 == 0) {
@@ -83,7 +113,7 @@ void print_arr(signed char* arr, int size) {
 
 int main(int argc, char* argv[]) {
     if (argc != 4) {
-        printf("Incorrect number of parameters passed. Ending program.\n");
+        printf("Número incorreto de parâmetros passados. Encerrando programa.\n");
         return 1;
     }
     else {
@@ -96,6 +126,10 @@ int main(int argc, char* argv[]) {
         sem_init(&empty, 0, N);
         sem_init(&full, 0, 0);
 
+        struct timespec start, finish;
+        double elapsed;
+        clock_gettime(CLOCK_MONOTONIC, &start);
+
         pthread_t producers[Np];
         pthread_t consumers[Nc];
         init_producers_threads(producers, Np);
@@ -103,12 +137,18 @@ int main(int argc, char* argv[]) {
         join_pthread_arr(producers, Np);
         join_pthread_arr(consumers, Nc);
 
+        clock_gettime(CLOCK_MONOTONIC, &finish);
+        elapsed = (finish.tv_sec - start.tv_sec);
+        elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
+        printf("Execução das threads levou %f segundos.\n", elapsed);
+
         free(buffer);
         sem_destroy(&mutex);
         sem_destroy(&empty);
         sem_destroy(&full);
 
-        printf("Ending program.\n");
+        printf("Encerrando programa.\n");
         return 0;
     }
 }
