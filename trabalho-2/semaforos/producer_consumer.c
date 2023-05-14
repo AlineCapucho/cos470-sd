@@ -14,8 +14,8 @@ sem_t mutex;
 sem_t empty;
 sem_t full;
 
-int M = (int) pow(10, 5); // Número de números que devem ser consumidos
-int max = (int) pow(10, 7); // Maior valor possível de número aleatório
+int M = 100000; // Número de números que devem ser consumidos
+int max = 10000000; // Maior valor possível de número aleatório
 
 // Buffer para armazenar números aleatórios e count para indicar último número aleatório gerado
 // O consumo de números aleatórios ocorre de forma LIFO
@@ -63,7 +63,7 @@ void* consumer(void* ptr) {
         M--;
         if (M == 0) {
             printf("Consumidores consumiram o número de índice 10^5. Encerrando programa.\n");
-            exit();
+            exit(1);
         }
         sem_post(&mutex);
         sem_post(&empty);
