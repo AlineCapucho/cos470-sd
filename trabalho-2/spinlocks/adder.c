@@ -1,22 +1,30 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-
+#include <stdatomic.h>
 #include <time.h>
 #include <pthread.h>
 
 // Command to compile: gcc -std=c17 -pthread adder.c -o adder 
 
 int sum = 0;
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+atomic_flag lock = ATOMIC_FLAG_INIT;
 
 typedef struct {
     int totalItems;
     signed char* firstItem;
 } RoutineArgs;
 
+void aquire() {
+    while (atomic_flag_test_and_set(&lock)) {}
+}
+
+void release() {
+    atomic_flag_clear(&lock);
+}
+
 void* routine(void* input) {
-    pthread_mutex_lock(&mutex);
+    aquire();
     int runs = 0;
     signed char currentItem = ((RoutineArgs*)input)->firstItem;
     while (runs < ((RoutineArgs*)input)->totalItems) {
@@ -24,7 +32,7 @@ void* routine(void* input) {
         sum += currentItem;
         runs += 1;
     }
-    pthread_mutex_unlock(&mutex);
+    release();
 }
 
 void init_random_arr(signed char* arr, int size) {
@@ -102,10 +110,14 @@ int main(int argc, char* argv[]) {
 
         int singleThreadSum = single_thread_sum(arr, N);
 
-        printf("The value of sum is (with multiple threads): %d\n", sum);
-        printf("The value of sum is (with a single threads): %d\n", singleThreadSum);
-        printf("Ending program.\n");
         free(arr);
+
+        printf("O valor da soma com %d threads é: %d\n", K, sum);
+        printf("O valor da soma com 1 threads é: %d\n", singleThreadSum);
+        if (sum != singleThreadSum){
+            printf("O valor das somas não é igual. Encerrando o programa.");
+            return -1;
+        };
 
         return 0;
     }
