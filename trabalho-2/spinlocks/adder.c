@@ -10,9 +10,20 @@
 int sum = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void* routine(void* ptr) {
+typedef struct {
+    int totalItems;
+    signed char* firstItem;
+} RoutineArgs;
+
+void* routine(void* input) {
     pthread_mutex_lock(&mutex);
-    sum += 1;
+    int runs = 0;
+    signed char currentItem = ((RoutineArgs*)input)->firstItem;
+    while (runs < ((RoutineArgs*)input)->totalItems) {
+        currentItem = *(((RoutineArgs*)input)->firstItem + runs);
+        sum += currentItem;
+        runs += 1;
+    }
     pthread_mutex_unlock(&mutex);
 }
 
@@ -26,9 +37,19 @@ void init_random_arr(signed char* arr, int size) {
     }
 }
 
-void init_pthread_arr(pthread_t* arr, int size) {
+void init_pthread_arr(pthread_t* arr, int size, int numArrSize, signed char* numArr) {
+    RoutineArgs *args[size];
+
     for (int i = 0; i < size; ++i) {
-        if (pthread_create(&arr[i], NULL, &routine, NULL) != 0) {
+        args[i] = malloc(sizeof(RoutineArgs));
+        int total = (numArrSize/size);
+        if (i == size - 1) {
+            total = (numArrSize/size) + (numArrSize%size);
+        }
+        args[i]->firstItem = &numArr[((numArrSize/size) * i)];
+        args[i]->totalItems = total;
+
+        if (pthread_create(&arr[i], NULL, &routine, (void *)args[i]) != 0) {
             printf("Creation of thread %d failed.\n", i);
             exit(1);
         }
@@ -44,6 +65,14 @@ void join_pthread_arr(pthread_t* arr, int size) {
     }
 }
 
+int single_thread_sum(signed char* arr, int size) {
+    int totalSum = 0;
+    for (int i = 0; i < size; ++i) {
+        totalSum += arr[i];
+    }
+    return totalSum;
+}
+
 void print_arr(signed char* arr, int size) {
     for (int i = 0; i < size; ++i) {
         if (i > 0 && i % 10 == 0) {
@@ -57,21 +86,26 @@ void print_arr(signed char* arr, int size) {
 int main(int argc, char* argv[]) {
     if (argc != 3) {
         printf("Incorrect number of parameters passed. Ending program.\n");
-        return 1;
+        return -1;
     }
     else {
         int N = atoi(argv[1]);
-        signed char arr[N];
+        signed char* arr;
+        arr = (signed char*)malloc(N * sizeof(signed char));
         init_random_arr(arr, N);
-        print_arr(arr, N);
+        // print_arr(arr, N);
 
         int K = atoi(argv[2]);
         pthread_t th[K];
-        init_pthread_arr(th, K);
+        init_pthread_arr(th, K, N, arr);
         join_pthread_arr(th, K);
 
-        printf("The value of sum is: %d\n", sum);
+        int singleThreadSum = single_thread_sum(arr, N);
+
+        printf("The value of sum is (with multiple threads): %d\n", sum);
+        printf("The value of sum is (with a single threads): %d\n", singleThreadSum);
         printf("Ending program.\n");
+        free(arr);
 
         return 0;
     }
