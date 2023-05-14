@@ -120,9 +120,19 @@ int main(int argc, char* argv[]) {
         init_random_arr(arr, N);
         // print_arr(arr, N);
 
+        struct timespec start, finish;
+        double elapsed;
+        clock_gettime(CLOCK_MONOTONIC, &start);
+
         pthread_t th[K];
         init_pthread_arr(th, K, N, arr);
         join_pthread_arr(th, K);
+
+        clock_gettime(CLOCK_MONOTONIC, &finish);
+        elapsed = (finish.tv_sec - start.tv_sec);
+        elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
+        printf("Execução das threads levou %f segundos.\n", elapsed);
 
         int singleThreadSum = single_thread_sum(arr, N);
 
