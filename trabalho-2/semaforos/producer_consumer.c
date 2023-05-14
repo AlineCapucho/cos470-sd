@@ -7,7 +7,8 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-// Command to compile: gcc -std=c17 -pthread producer_consumer.c -o producer_consumer 
+// Comando para compilar: gcc -std=c17 -pthread producer_consumer.c -o producer_consumer
+// Comando para executar: ./producer_consumer (parâmetro 1 - N) (parâmetro 2 - Np) (parâmetro 2 - Nc)
 
 // Semáforos para coordenação e sincronização
 sem_t mutex;
@@ -74,7 +75,7 @@ void* consumer(void* ptr) {
 void init_producers_threads(pthread_t* arr, int size) {
     for (int i = 0; i < size; ++i) {
         if (pthread_create(&arr[i], NULL, &producer, NULL) != 0) {
-            printf("Creation of thread %d failed.\n", i);
+            printf("Criação da thread %d falhou.\n", i);
             exit(1);
         }
     }
@@ -84,7 +85,7 @@ void init_producers_threads(pthread_t* arr, int size) {
 void init_consumers_threads(pthread_t* arr, int size) {
     for (int i = 0; i < size; ++i) {
         if (pthread_create(&arr[i], NULL, &consumer, NULL) != 0) {
-            printf("Creation of thread %d failed.\n", i);
+            printf("Criação da thread %d falhou.\n", i);
             exit(1);
         }
     }
@@ -94,7 +95,7 @@ void init_consumers_threads(pthread_t* arr, int size) {
 void join_pthread_arr(pthread_t* arr, int size) {
     for (int i = 0; i < size; ++i) {
         if (pthread_join(arr[i], NULL) != 0) {
-            printf("Execution of thread %d failed.\n", i);
+            printf("Execução da thread %d falhou.\n", i);
             exit(1);
         }
     }
@@ -114,7 +115,7 @@ void print_arr(signed char* arr, int size) {
 int main(int argc, char* argv[]) {
     if (argc != 4) {
         printf("Número incorreto de parâmetros passados. Encerrando programa.\n");
-        return 1;
+        exit(1);
     }
     else {
         int N = atoi(argv[1]);
@@ -149,6 +150,6 @@ int main(int argc, char* argv[]) {
         sem_destroy(&full);
 
         printf("Encerrando programa.\n");
-        return 0;
+        exit(0);
     }
 }
