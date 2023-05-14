@@ -5,24 +5,29 @@
 #include <time.h>
 #include <pthread.h>
 
-// Command to compile: gcc -std=c17 -pthread adder.c -o adder 
+// Comando para compilar: gcc -std=c17 -pthread adder.c -o adder
+// Comando para executar: ./adder (parâmetro 1 - N) (parâmetro 2 - K)
 
-int sum = 0;
+// Criação do spinlock usando variáveis atômicas e a instrução test_and_set
 atomic_flag lock = ATOMIC_FLAG_INIT;
+void aquire() {
+    while (atomic_flag_test_and_set(&lock)) {}
+}
+void release() {
+    atomic_flag_clear(&lock);
+}
 
+// Definição da variavel global sum, que armazenará o resultado da soma em múltiplos arrays
+// e dos parâmetros a serem passados para a função routine
+int sum = 0;
 typedef struct {
     int totalItems;
     signed char* firstItem;
 } RoutineArgs;
 
-void aquire() {
-    while (atomic_flag_test_and_set(&lock)) {}
-}
-
-void release() {
-    atomic_flag_clear(&lock);
-}
-
+// Rotina a ser executada por cada thread
+// Recebe um ponteiro para o primeiro item do array a ser somado naquela thread
+// E a quantidade total de números que a thread deve somar
 void* routine(void* input) {
     aquire();
     int runs = 0;
@@ -35,16 +40,19 @@ void* routine(void* input) {
     release();
 }
 
+// Cria um array de números aleatórios
 void init_random_arr(signed char* arr, int size) {
     srand(time(NULL)); // random number generator seed
     int x = 1;
     for (int i = 0; i < size; ++i) {
-        x = -100 + (rand() % 201); // rand() is in {0, 1, ..., RAND_MAX},
-        // therefore x is in {-100, 100}
+        x = -100 + (rand() % 201); // rand() está entre {0, 1, ..., RAND_MAX},
+        // logo x está entre {-100, 100}
         arr[i] = x;
     }
 }
 
+// Inicia o vetor de threads
+// Usa um vetor de structs RoutineArgs para os parâmetros das threads
 void init_pthread_arr(pthread_t* arr, int size, int numArrSize, signed char* numArr) {
     RoutineArgs *args[size];
 
@@ -58,21 +66,23 @@ void init_pthread_arr(pthread_t* arr, int size, int numArrSize, signed char* num
         args[i]->totalItems = total;
 
         if (pthread_create(&arr[i], NULL, &routine, (void *)args[i]) != 0) {
-            printf("Creation of thread %d failed.\n", i);
+            printf("Criação da thread %d falhou.\n", i);
             exit(1);
         }
     }
 }
 
+// Aguarda a finalização de um vetor de threads
 void join_pthread_arr(pthread_t* arr, int size) {
     for (int i = 0; i < size; ++i) {
         if (pthread_join(arr[i], NULL) != 0) {
-            printf("Execution of thread %d failed.\n", i);
+            printf("Execução da thread %d falhou.\n", i);
             exit(1);
         }
     }
 }
 
+// Executa a soma em uma única thread
 int single_thread_sum(signed char* arr, int size) {
     int totalSum = 0;
     for (int i = 0; i < size; ++i) {
@@ -81,6 +91,7 @@ int single_thread_sum(signed char* arr, int size) {
     return totalSum;
 }
 
+// Printa um array
 void print_arr(signed char* arr, int size) {
     for (int i = 0; i < size; ++i) {
         if (i > 0 && i % 10 == 0) {
@@ -93,17 +104,22 @@ void print_arr(signed char* arr, int size) {
 
 int main(int argc, char* argv[]) {
     if (argc != 3) {
-        printf("Incorrect number of parameters passed. Ending program.\n");
+        printf("Número incorreto de parâmetros passados. Encerrando programa.\n");
         return -1;
     }
     else {
         int N = atoi(argv[1]);
+        int K = atoi(argv[2]);
+        if (K <= 0 || N <= 0) {
+            printf("Os parâmetros K e N não devem ser nulos ou negativos. Encerrando programa.\n");
+            exit(1);
+        }
+
         signed char* arr;
         arr = (signed char*)malloc(N * sizeof(signed char));
         init_random_arr(arr, N);
         // print_arr(arr, N);
 
-        int K = atoi(argv[2]);
         pthread_t th[K];
         init_pthread_arr(th, K, N, arr);
         join_pthread_arr(th, K);
@@ -115,10 +131,10 @@ int main(int argc, char* argv[]) {
         printf("O valor da soma com %d threads é: %d\n", K, sum);
         printf("O valor da soma com 1 threads é: %d\n", singleThreadSum);
         if (sum != singleThreadSum){
-            printf("O valor das somas não é igual. Encerrando o programa.");
-            return -1;
+            printf("O valor das somas não é igual. Encerrando programa.\n");
+            exit(1);
         };
 
-        return 0;
+        exit(0);
     }
 }
