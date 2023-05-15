@@ -4,11 +4,12 @@
 
 #include <math.h>
 #include <time.h>
+#include <string.h>
 #include <pthread.h>
 #include <semaphore.h>
 
-// Comando para compilar: gcc -std=c17 -pthread producer_consumer.c -o producer_consumer
-// Comando para executar: ./producer_consumer (parâmetro 1 - N) (parâmetro 2 - Np) (parâmetro 2 - Nc)
+// Comando para compilar: gcc -std=c17 -pthread producer_consumer.c -o producer_consumer 
+// Comando para executar: ./producer_consumer (parâmetro 1 - N) (parâmetro 2 - Np) (parâmetro 3 - Nc)
 
 // Semáforos para coordenação e sincronização
 sem_t mutex;
@@ -16,12 +17,23 @@ sem_t empty;
 sem_t full;
 
 int M = 100000; // Número de números que devem ser consumidos
+// int M = 5; // Número de números que devem ser consumidos
 int max = 10000000; // Maior valor possível de número aleatório
 
 // Buffer para armazenar números aleatórios e count para indicar último número aleatório gerado
 // O consumo de números aleatórios ocorre de forma LIFO
 int* buffer;
 int count = 0;
+
+// Tamanho do buffer, número de produtores e número de consumidores
+int N;
+int Np;
+int Nc;
+
+// Variável de controle que indica se os consumidores terminaram de consumir M recursos
+// Se sim, então o próximo produtor a executar deve usar o sinal do semáforo para liberar
+// todas as threads consumidoras que estão aguardando continuar, para finalizarem
+int sig_consumers = 0;
 
 // Função de validação de número primo
 int is_prime(int n) {
@@ -40,6 +52,19 @@ void* producer(void* ptr) {
         int x = 1 + rand() % max;
         sem_wait(&empty);
         sem_wait(&mutex);
+        if (sig_consumers == 1) {
+            for (int i = 0; i <= Nc; ++i) {
+                sem_post(&full);
+            }
+            sig_consumers = 0;
+            sem_post(&mutex);
+            pthread_exit(NULL);
+        }
+        else if (M <= 0) {
+            sem_post(&mutex);
+            sem_post(&full);
+            pthread_exit(NULL);
+        }
         buffer[count] = x;
         count++;
         sem_post(&mutex);
@@ -53,6 +78,11 @@ void* consumer(void* ptr) {
     while (1) {
         sem_wait(&full);
         sem_wait(&mutex);
+        if (M <= 0) {
+            sem_post(&mutex);
+            sem_post(&empty);
+            pthread_exit(NULL);
+        }
         y = buffer[count-1];
         count--;
         if (is_prime(y)) {
@@ -62,9 +92,14 @@ void* consumer(void* ptr) {
             printf("Número consumido %d não é primo.\n", y);
         }
         M--;
-        if (M == 0) {
+        if (M <= 0) {
             printf("Consumidores consumiram o número de índice 10^5. Encerrando programa.\n");
-            exit(1);
+            sig_consumers = 1;
+            for (int i = 0; i <= Np; ++i) {
+                sem_post(&empty);
+            }
+            sem_post(&mutex);
+            pthread_exit(NULL);
         }
         sem_post(&mutex);
         sem_post(&empty);
@@ -75,7 +110,7 @@ void* consumer(void* ptr) {
 void init_producers_threads(pthread_t* arr, int size) {
     for (int i = 0; i < size; ++i) {
         if (pthread_create(&arr[i], NULL, &producer, NULL) != 0) {
-            printf("Criação da thread %d falhou.\n", i);
+            printf("Creation of thread %d failed.\n", i);
             exit(1);
         }
     }
@@ -85,7 +120,7 @@ void init_producers_threads(pthread_t* arr, int size) {
 void init_consumers_threads(pthread_t* arr, int size) {
     for (int i = 0; i < size; ++i) {
         if (pthread_create(&arr[i], NULL, &consumer, NULL) != 0) {
-            printf("Criação da thread %d falhou.\n", i);
+            printf("Creation of thread %d failed.\n", i);
             exit(1);
         }
     }
@@ -95,32 +130,43 @@ void init_consumers_threads(pthread_t* arr, int size) {
 void join_pthread_arr(pthread_t* arr, int size) {
     for (int i = 0; i < size; ++i) {
         if (pthread_join(arr[i], NULL) != 0) {
-            printf("Execução da thread %d falhou.\n", i);
+            printf("Execution of thread %d failed.\n", i);
             exit(1);
         }
     }
 }
 
-// Printa um array
-void print_arr(signed char* arr, int size) {
-    for (int i = 0; i < size; ++i) {
-        if (i > 0 && i % 10 == 0) {
-            printf("\n");
-        }
-        printf("%3d ", arr[i]);
+void write_data(int N, int Np, int Nc, double runtime) {
+    char filename[] = "Runtimes.txt";
+    FILE* ptr;
+    ptr = fopen(filename, "a");
+
+    if (ptr == NULL) {
+        printf("Error opening file.\n");
+        exit(1);
     }
-    printf("\n");
+
+    fprintf(ptr, "%d", N);
+    fprintf(ptr, "%s", " ");
+    fprintf(ptr, "%d", Np);
+    fprintf(ptr, "%s", " ");
+    fprintf(ptr, "%d", Nc);
+    fprintf(ptr, "%s", " ");
+    fprintf(ptr, "%f", runtime);
+    fprintf(ptr, "%s", "\n");
+
+    fclose(ptr);
 }
 
 int main(int argc, char* argv[]) {
     if (argc != 4) {
         printf("Número incorreto de parâmetros passados. Encerrando programa.\n");
-        exit(1);
+        return 1;
     }
     else {
-        int N = atoi(argv[1]);
-        int Np = atoi(argv[2]);
-        int Nc = atoi(argv[3]);
+        N = atoi(argv[1]);
+        Np = atoi(argv[2]);
+        Nc = atoi(argv[3]);
 
         buffer = malloc(N * sizeof(int));
         sem_init(&mutex, 0, 1);
@@ -144,12 +190,14 @@ int main(int argc, char* argv[]) {
 
         printf("Execução das threads levou %f segundos.\n", elapsed);
 
+        write_data(N, Np, Nc, elapsed);
+
         free(buffer);
         sem_destroy(&mutex);
         sem_destroy(&empty);
         sem_destroy(&full);
 
         printf("Encerrando programa.\n");
-        exit(0);
+        return 0;
     }
 }
