@@ -45,6 +45,28 @@ int is_prime(int n) {
     return 1;
 }
 
+void write_buffer_data(int filled, int firstcall) {
+    char filename[] = "buffer_usage.txt";
+    FILE* ptr;
+    ptr = fopen(filename, "a");
+
+    if (ptr == NULL) {
+        printf("Error opening file.\n");
+        exit(1);
+    }
+
+    if (firstcall == 1) {
+        fprintf(ptr, "%s", "\n");
+        fprintf(ptr, "%s", "# ");
+    }
+    else {
+        fprintf(ptr, "%d", filled);
+        fprintf(ptr, "%s", " ");
+    }
+
+    fclose(ptr);
+}
+
 // Produz número aleatório
 void* producer(void* ptr) {
     srand(time(NULL)); // random number generator seed
@@ -60,13 +82,14 @@ void* producer(void* ptr) {
             sem_post(&mutex);
             pthread_exit(NULL);
         }
-        else if (M <= 0) {
+        else if (M == 0) {
             sem_post(&mutex);
             sem_post(&full);
             pthread_exit(NULL);
         }
         buffer[count] = x;
         count++;
+        write_buffer_data(count, 0);
         sem_post(&mutex);
         sem_post(&full);
     }
@@ -78,13 +101,14 @@ void* consumer(void* ptr) {
     while (1) {
         sem_wait(&full);
         sem_wait(&mutex);
-        if (M <= 0) {
+        if (M == 0) {
             sem_post(&mutex);
             sem_post(&empty);
             pthread_exit(NULL);
         }
         y = buffer[count-1];
         count--;
+        write_buffer_data(count, 0);
         if (is_prime(y)) {
             printf("Número consumido %d é primo.\n", y);
         }
@@ -92,7 +116,7 @@ void* consumer(void* ptr) {
             printf("Número consumido %d não é primo.\n", y);
         }
         M--;
-        if (M <= 0) {
+        if (M == 0) {
             printf("Consumidores consumiram o número de índice 10^5. Encerrando programa.\n");
             sig_consumers = 1;
             for (int i = 0; i <= Np; ++i) {
@@ -136,7 +160,8 @@ void join_pthread_arr(pthread_t* arr, int size) {
     }
 }
 
-void write_data(int N, int Np, int Nc, double runtime) {
+// Escreve os dados de tempo de execução em função dos parâmetros em um arquivo
+void write_runtime_data(int N, int Np, int Nc, double runtime) {
     char filename[] = "Runtimes.txt";
     FILE* ptr;
     ptr = fopen(filename, "a");
@@ -172,6 +197,7 @@ int main(int argc, char* argv[]) {
         sem_init(&mutex, 0, 1);
         sem_init(&empty, 0, N);
         sem_init(&full, 0, 0);
+        write_buffer_data(count, 1);
 
         struct timespec start, finish;
         double elapsed;
@@ -190,7 +216,7 @@ int main(int argc, char* argv[]) {
 
         printf("Execução das threads levou %f segundos.\n", elapsed);
 
-        write_data(N, Np, Nc, elapsed);
+        write_runtime_data(N, Np, Nc, elapsed);
 
         free(buffer);
         sem_destroy(&mutex);
