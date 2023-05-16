@@ -29,14 +29,16 @@ typedef struct {
 // Recebe um ponteiro para o primeiro item do array a ser somado naquela thread
 // E a quantidade total de números que a thread deve somar
 void* routine(void* input) {
-    aquire();
+    int parcialSum = 0;
     int runs = 0;
     signed char currentItem = ((RoutineArgs*)input)->firstItem;
     while (runs < ((RoutineArgs*)input)->totalItems) {
         currentItem = *(((RoutineArgs*)input)->firstItem + runs);
-        sum += currentItem;
+        parcialSum += currentItem;
         runs += 1;
     }
+    aquire();
+        sum += parcialSum;
     release();
 }
 
@@ -102,6 +104,27 @@ void print_arr(signed char* arr, int size) {
     printf("\n");
 }
 
+// Escreve os dados de tempo de execução em função dos parâmetros em um arquivo
+void write_runtime_data(int N, int K, double runtime) {
+    char filename[] = "Runtimes.txt";
+    FILE* ptr;
+    ptr = fopen(filename, "a");
+
+    if (ptr == NULL) {
+        printf("Error opening file.\n");
+        exit(1);
+    }
+
+    fprintf(ptr, "%d", N);
+    fprintf(ptr, "%s", " ");
+    fprintf(ptr, "%d", K);
+    fprintf(ptr, "%s", " ");
+    fprintf(ptr, "%f", runtime);
+    fprintf(ptr, "%s", "\n");
+
+    fclose(ptr);
+}
+
 int main(int argc, char* argv[]) {
     if (argc != 3) {
         printf("Número incorreto de parâmetros passados. Encerrando programa.\n");
@@ -131,6 +154,8 @@ int main(int argc, char* argv[]) {
         clock_gettime(CLOCK_MONOTONIC, &finish);
         elapsed = (finish.tv_sec - start.tv_sec);
         elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
+        write_runtime_data(N, K, elapsed);
 
         printf("Execução das threads levou %f segundos.\n", elapsed);
 
