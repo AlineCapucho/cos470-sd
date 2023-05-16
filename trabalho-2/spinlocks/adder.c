@@ -155,8 +155,6 @@ int main(int argc, char* argv[]) {
         elapsed = (finish.tv_sec - start.tv_sec);
         elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 
-        write_runtime_data(N, K, elapsed);
-
         printf("Execução das threads levou %f segundos.\n", elapsed);
 
         int singleThreadSum = single_thread_sum(arr, N);
@@ -169,6 +167,8 @@ int main(int argc, char* argv[]) {
             printf("O valor das somas não é igual. Encerrando programa.\n");
             exit(1);
         };
+
+        write_runtime_data(N, K, elapsed);
 
         exit(0);
     }
