@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include "queue.c"
+#include "functions_util.c"
 
 #define BUFFER_SIZE 2000
 
@@ -33,37 +34,6 @@ sem_t mutex;
 // Inicializando fila de sockets e seus pids
 node_t *socket_queue = NULL;
 node_t *socket_queue_pid = NULL;
-
-// Code from: https://stackoverflow.com/a/34957656
-int split(const char *txt, char delim, char ***tokens)
-{
-    int *tklen, *t, count = 1;
-    char **arr, *p = (char *) txt;
-
-    while (*p != '\0') {
-        if (*p++ == delim) {
-            count += 1;
-        }
-    }
-    t = tklen = calloc (count, sizeof (int));
-    for (p = (char *) txt; *p != '\0'; p++) {
-        *p == delim ? *t++ : (*t)++;
-    }
-    *tokens = arr = malloc (count * sizeof (char *));
-    t = tklen;
-    p = *arr++ = calloc (*(t++) + 1, sizeof (char *));
-    while (*txt != '\0')
-    {
-        if (*txt == delim)
-        {
-            p = *arr++ = calloc (*(t++) + 1, sizeof (char *));
-            txt++;
-        }
-        else *p++ = *txt++;
-    }
-    free(tklen);
-    return count;
-}
 
 int* write_log(char* message) {
     char filename[] = "log.txt";
@@ -226,14 +196,6 @@ void handle_message(int client_socket) {
     message_header[2] = (*output)[1];
     process_header(&message_header);
 }
-
-// void next_connection() {
-//     client_socket = dequeue(&socket_queue);
-
-//     if (client_socket != -1) {
-//         start_connection(client_socket);
-//     }
-// }
 
 int main(int argc, char* argv[]) {
     if (argc != 4) {
