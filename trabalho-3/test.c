@@ -42,25 +42,84 @@ void write_log(int pid, char* message) {
     fclose(ptr);
 }
 
+int split(const char *txt, char delim, char ***tokens)
+{
+    int *tklen, *t, count = 1;
+    char **arr, *p = (char *) txt;
+
+    while (*p != '\0') {
+        if (*p++ == delim) {
+            count += 1;
+        }
+    }
+    t = tklen = calloc (count, sizeof (int));
+    for (p = (char *) txt; *p != '\0'; p++) {
+        *p == delim ? *t++ : (*t)++;
+    }
+    *tokens = arr = malloc (count * sizeof (char *));
+    t = tklen;
+    p = *arr++ = calloc (*(t++) + 1, sizeof (char *));
+    while (*txt != '\0')
+    {
+        if (*txt == delim)
+        {
+            p = *arr++ = calloc (*(t++) + 1, sizeof (char *));
+            txt++;
+        }
+        else *p++ = *txt++;
+    }
+    free (tklen);
+    return count;
+}
+
 int main () {
-    time_t rawtime;
-    struct tm * timeinfo;
+    // time_t rawtime;
+    // struct tm * timeinfo;
 
-    time(&rawtime );
-    timeinfo = localtime(&rawtime);
-    printf ("Current local time and date: %s", asctime (timeinfo));
+    // time(&rawtime );
+    // timeinfo = localtime(&rawtime);
+    // printf ("Current local time and date: %s", asctime (timeinfo));
 
-    // char *buff = "this is a test string";
-    // printf("%.*s \n", 4, buff + 10);
+    // time_t mytime = time(NULL);
+    // char * time_str = ctime(&mytime);
+    // time_str[strlen(time_str)-1] = '\0';
+    // printf("Current Time : %s\n", time_str);
 
-    time_t mytime = time(NULL);
-    char * time_str = ctime(&mytime);
-    time_str[strlen(time_str)-1] = '\0';
-    printf("Current Time : %s\n", time_str);
+    // printf("%.*s \n", 8, time_str + strlen(time_str) - 13);
 
-    printf("%.*s \n", 8, time_str + strlen(time_str) - 13);
+    // write_log(125, "1");
 
-    write_log(125, "1");
+    // char phrase[20] = "Hello World";
 
-    return 0;
+    // char *token = strtok(phrase, " ");
+    // printf("%s\n", token); //printing the token
+
+    // char **tokens;
+    // int count, i;
+    // const char *str = "JAN,FEB,MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC";
+
+    // count = split(str, ',', &tokens);
+    // for (i = 0; i < count; i++) {
+    //     printf ("%s\n", tokens[i]);
+    // }
+
+    // /* freeing tokens */
+    // for (i = 0; i < count; i++) {
+    //     free (tokens[i]);
+    // }
+    // free (tokens);
+
+    // return 0;
+
+    char file_frame[100] = "shots";
+    char fout[100];
+    sprintf((char*)fout,"%s%0*d", file_frame, 10 - strlen(file_frame), 0);
+
+    char message[10] = "2|";
+    strcat(message, "251");
+    sprintf((char*)message,"%s%0*d", message, 10 - strlen(message), 0);
+
+    printf("%s\n", file_frame);
+    printf("%s\n", fout);
+    printf("%s\n", message);
 }

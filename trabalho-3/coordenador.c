@@ -30,10 +30,42 @@ int k;
 // Semáforo para coordenação e sincronização
 sem_t mutex;
 
-// Inicializando fila de sockets
+// Inicializando fila de sockets e seus pids
 node_t *socket_queue = NULL;
+node_t *socket_queue_pid = NULL;
 
-void write_log(int pid, char* message) {
+// Code from: https://stackoverflow.com/a/34957656
+int split(const char *txt, char delim, char ***tokens)
+{
+    int *tklen, *t, count = 1;
+    char **arr, *p = (char *) txt;
+
+    while (*p != '\0') {
+        if (*p++ == delim) {
+            count += 1;
+        }
+    }
+    t = tklen = calloc (count, sizeof (int));
+    for (p = (char *) txt; *p != '\0'; p++) {
+        *p == delim ? *t++ : (*t)++;
+    }
+    *tokens = arr = malloc (count * sizeof (char *));
+    t = tklen;
+    p = *arr++ = calloc (*(t++) + 1, sizeof (char *));
+    while (*txt != '\0')
+    {
+        if (*txt == delim)
+        {
+            p = *arr++ = calloc (*(t++) + 1, sizeof (char *));
+            txt++;
+        }
+        else *p++ = *txt++;
+    }
+    free(tklen);
+    return count;
+}
+
+int* write_log(char* message) {
     char filename[] = "log.txt";
     FILE* ptr;
     ptr = fopen(filename, "a");
@@ -43,15 +75,18 @@ void write_log(int pid, char* message) {
         exit(1);
     }
 
+    char **message_tokens;
+    int count = split(message, '|', &message_tokens);
+
     char pid_str[BUFFER_SIZE];
-    snprintf(pid_str, BUFFER_SIZE, "%d", pid); // copy int pid to char pid_str
+    strcpy(pid_str, message_tokens[1]);
 
     char message_type[message_type_size];
-    if (message == "1") {
+    if (message_tokens[0] == "1") {
         strcpy(message_type, "REQUEST");
-    } else if (message == "2") {
+    } else if (message_tokens[0] == "2") {
         strcpy(message_type, "GRANT");
-    } else if (message == "3") {
+    } else if (message_tokens[0] == "3") {
         strcpy(message_type, "RELEASE");
     }
 
@@ -64,6 +99,109 @@ void write_log(int pid, char* message) {
     fprintf(ptr, "Mensagem: %s; ", message_type);
     fprintf(ptr, "Processo: %s\n", pid_str);
     fclose(ptr);
+
+    int* message_header = malloc(sizeof(int) * 2);
+    message_header[0] = atoi(pid_str); // pid
+    message_header[1] = (int) (message_tokens[0] - '0'); // message_type
+    return message_header;
+}
+
+void* handle_connection(void* ptr_client_socket) {
+    int client_socket = *((int*) ptr_client_socket);
+    free(ptr_client_socket);
+
+    sem_wait(&mutex);
+
+    char filename[] = "resultados.txt";
+    FILE* ptr;
+    ptr = fopen(filename, "a");
+
+    if (ptr == NULL) {
+        printf("Error opening file.\n");
+        exit(1);
+    }
+
+    int pid = get_headval(&socket_queue_pid);
+    char pid_str[BUFFER_SIZE];
+    snprintf(pid_str, BUFFER_SIZE, "%d", pid); // copy int x to char y
+
+    time_t current_time = time(NULL);
+    char * current_time_str = ctime(&current_time);
+    current_time_str[strlen(current_time_str)-1] = '\0';
+    printf("Current Time : %s\n", current_time_str);
+
+    fprintf(ptr, "Processo: %s\n", pid_str);
+    fprintf(ptr, "Hora: %.*s; ", 8, current_time_str + strlen(current_time_str) - 13);
+    
+    sem_post(&mutex);
+
+    fclose(ptr);
+    sleep(k);
+
+    // Limpeza do buffer do client
+    memset(client_buffer, '\0', sizeof(client_buffer));
+
+    // Preparando mensagem de release
+    char message[10] = "3|";
+    strcat(message, pid_str);
+    strcat(message, "|");
+    sprintf((char*)message,"%s%0*d", message, 10 - strlen(message), 0);
+    strcpy(client_buffer,  message);
+
+    // Enviando mensagem de release
+    int client_message_status;
+    client_message_status = send(client_socket, server_buffer, sizeof(client_buffer), 0);
+    if (client_message_status == -1) {
+        printf("Erro ao enviar mensagem do cliente.\n");
+    }
+    return NULL;
+}
+
+void start_connection(int** message_header) {
+    ++ongoing_connections;
+
+    // Gerando uma thread para a conexão do socket
+    pthread_t t;
+    int *ptr_client = malloc(sizeof(int));
+    *ptr_client = (*message_header)[0];
+    pthread_create(&t, NULL, handle_connection, ptr_client);
+
+    // Limpeza do buffer do servidor
+    memset(server_buffer, '\0', sizeof(server_buffer));
+
+    // Preparando mensagem de grant
+    char pid_str[10];
+    strcpy(pid_str, (*message_header)[1]);
+    char message[10] = "2|";
+    strcat(message, pid_str);
+    strcat(message, "|");
+    sprintf((char*)message,"%s%0*d", message, 10 - strlen(message), 0);
+    strcpy(server_buffer,  message);
+
+    // Enviando mensagem de grant
+    int server_message_status;
+    server_message_status = send(client_socket, server_buffer, sizeof(server_buffer), 0);
+    if (server_message_status == -1) {
+        printf("Erro ao enviar mensagem do server.\n");
+    }
+}
+
+void process_header(int** message_header) {
+    if (*message_header[2] == 1) { // Request
+        enqueue(&socket_queue, *message_header[0]);
+        enqueue(&socket_queue_pid, *message_header[1]);
+        if (ongoing_connections < max_connections) {
+            start_connection(message_header);
+        }
+    } else if (*message_header[2] == 3) { // Release
+        --ongoing_connections;
+        int* start_connection_message_header[3];
+        start_connection_message_header[0] = dequeue(&socket_queue);
+        start_connection_message_header[1] = dequeue(&socket_queue_pid);
+        start_connection(start_connection_message_header);
+    } else { // Anything else
+        exit(1);
+    }
 }
 
 void handle_message(int client_socket) {
@@ -81,60 +219,21 @@ void handle_message(int client_socket) {
         exit(1);
     }
 
-    pid = getpid();
-    write_log(pid, client_buffer);
+    int* message_header[3]; 
+    int** output = write_log(client_buffer);
+    message_header[0] = client_socket;
+    message_header[1] = (*output)[0];
+    message_header[2] = (*output)[1];
+    process_header(&message_header);
 }
 
-// void* handle_connection(int pid, void* ptr_client_socket, int k) {
-void* handle_connection(void* ptr_client_socket) {
-    int client_socket = *((int*) ptr_client_socket);
-    free(ptr_client_socket);
+// void next_connection() {
+//     client_socket = dequeue(&socket_queue);
 
-    sem_wait(&mutex);
-
-    char filename[] = "resultados.txt";
-    FILE* ptr;
-    ptr = fopen(filename, "a");
-
-    if (ptr == NULL) {
-        printf("Error opening file.\n");
-        exit(1);
-    }
-
-    // char pid_str[BUFFER_SIZE];
-    // snprintf(pid_str, BUFFER_SIZE, "%d", pid); // copy int pid to char pid_str
-
-    time_t current_time = time(NULL);
-    char * current_time_str = ctime(&current_time);
-    current_time_str[strlen(current_time_str)-1] = '\0';
-    printf("Current Time : %s\n", current_time_str);
-
-    // fprintf(ptr, "Processo: %s\n", pid_str);
-    fprintf(ptr, "Hora: %.*s; ", 8, current_time_str + strlen(current_time_str) - 13);
-    
-    sem_post(&mutex);
-
-    fclose(ptr);
-    sleep(k);
-    --ongoing_connections;
-    return NULL;
-}
-
-void start_connection(int client_socket) {
-    ++ongoing_connections;
-    pthread_t t;
-    int *ptr_client = malloc(sizeof(int));
-    *ptr_client = client_socket;
-    pthread_create(&t, NULL, handle_connection, ptr_client);
-}
-
-void next_connection() {
-    client_socket = dequeue(&socket_queue);
-
-    if (client_socket != -1) {
-        start_connection(client_socket);
-    }
-}
+//     if (client_socket != -1) {
+//         start_connection(client_socket);
+//     }
+// }
 
 int main(int argc, char* argv[]) {
     if (argc != 4) {
@@ -186,11 +285,6 @@ int main(int argc, char* argv[]) {
             printf("Conexão estabelecida com sucesso.\n");
 
             handle_message(client_socket);
-            if (ongoing_connections > max_connections) {
-                enqueue(&socket_queue, client_socket);
-            } else {
-                start_connection(client_socket);
-            }
         }
         return 0;
     }

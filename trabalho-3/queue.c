@@ -40,3 +40,19 @@ int dequeue(node_t **head) {
 
     return retval;
 }
+
+int get_headval(node_t **head) {
+    node_t *current, *prev = NULL;
+    int retval = -1;
+
+    if (*head == NULL) return -1;
+
+    current = *head;
+    while (current->next != NULL) {
+        prev = current;
+        current = current->next;
+    }
+
+    retval = current->val;
+    return retval;
+}
