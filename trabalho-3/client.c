@@ -11,10 +11,11 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define BUFFER_SIZE 1024
+
 // Declaração de variáveis
-const buffer_size = 1024;
 int client_socket;
-char server_buffer[buffer_size], client_buffer[buffer_size];
+char server_buffer[BUFFER_SIZE], client_buffer[BUFFER_SIZE];
 struct sockaddr_in server_address;
 int port = 8080;
 char *ip = "127.0.0.1";
@@ -23,18 +24,38 @@ int requestCode = 1;
 int grantCode = 2;
 int releaseCode = 3;
 
+char* createMessage(int code, int pid) {
+  char separator = '|';
+  char* messageBuffer = malloc(BUFFER_SIZE);
+  memset(messageBuffer, '0', BUFFER_SIZE);
+
+  snprintf(
+    messageBuffer, 
+    BUFFER_SIZE, 
+    "%d%s%d%s", 
+    requestCode,
+    separator,
+    pid,
+    separator
+  );
+  
+  return messageBuffer;
+}
+
 int sendRequest (int socket, int pid, int k) {
   // criar mensagem com 
   // o código do request + separadores + padding
   snprintf(
     client_buffer,
-    buffer_size,
+    BUFFER_SIZE,
     "%s",
     createMessage(requestCode, pid)
   );
 
+  int client_message_status;
+
   // tentar enviar mensagem ao servidor
-  int client_message_status = send(socket, client_buffer, strlen(client_buffer)+1, 0);
+  client_message_status = send(socket, client_buffer, strlen(client_buffer)+1, 0);
   if (client_message_status == -1) {
     printf("Erro ao enviar mensagem do client.\n");
   }
@@ -52,30 +73,12 @@ int sendRequest (int socket, int pid, int k) {
 
   snprintf(
     client_buffer,
-    buffer_size,
+    BUFFER_SIZE,
     "%s",
     createMessage(releaseCode, pid)
   );
 
-  int client_message_status = send(socket, client_buffer, strlen(client_buffer)+1, 0);
-}
-
-char* createMessage(int code, int pid) {
-  char separator = '|';
-  char* messageBuffer = malloc(buffer_size);
-  memset(messageBuffer, '0', buffer_size);
-
-  snprintf(
-    messageBuffer, 
-    buffer_size, 
-    "%d%s%d%s", 
-    requestCode,
-    separator,
-    pid,
-    separator
-  );
-  
-  return messageBuffer;
+  client_message_status = send(socket, client_buffer, strlen(client_buffer)+1, 0);
 }
 
 void writeResult(int pid) {
@@ -85,11 +88,11 @@ void writeResult(int pid) {
 
   if (ptr == NULL) {
       printf("Erro abrindo o arquivo.\n");
-      return -1;
+      exit(1);
   }
 
-  char pid_str[buffer_size];
-  snprintf(pid_str, buffer_size, "%d", pid);
+  char pid_str[BUFFER_SIZE];
+  snprintf(pid_str, BUFFER_SIZE, "%d", pid);
 
   time_t current_time = time(NULL);
   char * current_time_str = ctime(&current_time);
@@ -145,14 +148,14 @@ int main(int argc, char* argv[]) {
 
     // Loop de requisições 
     for (int i = 0; i < r; i++) {
-      int request = sendRequest(socket, k);
+      pid_t process_pid = getpid();
+      int request = sendRequest(socket, process_pid, k);
 
       if (request < 0) {
         printf("Erro ao enviar request.\n");
         return -1;
       }
 
-      pid_t process_pid = getpid();
       writeResult(process_pid);
     }
 
