@@ -13,6 +13,9 @@
 #include "queue.c"
 #include "functions_util.c"
 
+// Comando para compilar: gcc -std=c17 -pthread coordenador.c -o coordenador 
+// Comando para executar: ./coordenador (parâmetro 1 - k)
+
 #define BUFFER_SIZE 2000
 
 // Declaração de variáveis
@@ -34,6 +37,7 @@ node_t *socket_queue = NULL;
 node_t *socket_queue_pid = NULL;
 
 int* write_log(char* message) {
+    printf("Escrevendo o log.\n");
     char filename[] = "log.txt";
     FILE* ptr;
     ptr = fopen(filename, "a");
@@ -109,6 +113,7 @@ void* handle_connection(void* ptr_client_socket) {
 }
 
 void start_connection(int** message_header) {
+    printf("Iniciando conexão.\n");
     ++ongoing_connections;
 
     // Gerando uma thread para a conexão do socket
@@ -138,19 +143,23 @@ void start_connection(int** message_header) {
 }
 
 void process_header(int** message_header) {
+    printf("Processando o header da mensagem.\n");
     if (*message_header[2] == 1) { // Request
+        printf("Request message.\n");
         enqueue(&socket_queue, *message_header[0]);
         enqueue(&socket_queue_pid, *message_header[1]);
         if (ongoing_connections < max_connections) {
             start_connection(message_header);
         }
     } else if (*message_header[2] == 3) { // Release
+        printf("Release message.\n");
         --ongoing_connections;
         int* start_connection_message_header[3];
         start_connection_message_header[0] = dequeue(&socket_queue);
         start_connection_message_header[1] = dequeue(&socket_queue_pid);
         start_connection(start_connection_message_header);
-    } else { // Anything else
+    } else {
+        printf("Erro ao processar header da mensagem.\n");
         exit(1);
     }
 }
@@ -174,10 +183,11 @@ void handle_message(int client_socket) {
     printf("Recebida mensagem do cliente.\n");
 
     int* message_header[3]; 
-    int** output = write_log(client_buffer);
+    int* output = write_log(client_buffer);
+
     message_header[0] = client_socket;
-    message_header[1] = (*output)[0];
-    message_header[2] = (*output)[1];
+    message_header[1] = output[0];
+    message_header[2] = output[1];
     process_header(&message_header);
 }
 
