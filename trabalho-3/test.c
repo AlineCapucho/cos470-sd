@@ -5,7 +5,7 @@
 #include <string.h>
 
 // Declaração de variáveis
-int buffer_size = 2000;
+int buffer_size = 1024;
 
 int message_type_size = 8;
 
