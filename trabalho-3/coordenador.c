@@ -107,23 +107,6 @@ void* handle_connection(void* ptr_client_socket) {
 
     fclose(ptr);
     sleep(k);
-
-    // Limpeza do buffer do client
-    memset(client_buffer, '\0', sizeof(client_buffer));
-
-    // Preparando mensagem de release
-    char message[10] = "3|";
-    strcat(message, pid_str);
-    strcat(message, "|");
-    sprintf((char*)message,"%s%0*d", message, 10 - strlen(message), 0);
-    strcpy(client_buffer,  message);
-
-    // Enviando mensagem de release
-    int client_message_status;
-    client_message_status = send(client_socket, server_buffer, sizeof(client_buffer), 0);
-    if (client_message_status == -1) {
-        printf("Erro ao enviar mensagem do cliente.\n");
-    }
     return NULL;
 }
 
