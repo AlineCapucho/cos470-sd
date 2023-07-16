@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 2000
 
 // Declaração de variáveis
 int client_socket;
@@ -32,7 +32,7 @@ char* createMessage(int code, int pid) {
   snprintf(
     messageBuffer, 
     BUFFER_SIZE, 
-    "%d%s%d%s", 
+    "%d%c%d%c", 
     requestCode,
     separator,
     pid,
@@ -43,6 +43,9 @@ char* createMessage(int code, int pid) {
 }
 
 int sendRequest (int socket, int pid, int k) {
+  memset(client_buffer, '\0', BUFFER_SIZE);
+  memset(server_buffer, '\0', BUFFER_SIZE);
+
   // criar mensagem com 
   // o código do request + separadores + padding
   snprintf(
@@ -55,20 +58,25 @@ int sendRequest (int socket, int pid, int k) {
   int client_message_status;
 
   // tentar enviar mensagem ao servidor
-  client_message_status = send(socket, client_buffer, strlen(client_buffer)+1, 0);
+  client_message_status = send(socket, client_buffer, sizeof(client_buffer), 0);
   if (client_message_status == -1) {
-    printf("Erro ao enviar mensagem do client.\n");
+    printf("Erro ao enviar request do client.\n");
+    return -1;
   }
 
   int server_message_status = recv(socket, server_buffer, sizeof(server_buffer), 0);
-  if(server_message_status < 0){
+
+  if (server_message_status == -1) {
     printf("Erro ao receber mensagem do server.\n");
     return -1;
   }
 
-  if (strstr(server_buffer, grantCode) != NULL) {
-    printf("Processo acessou a região crítica.\n");
+  while(server_buffer[0] != grantCode) {
+    printf("Processo tentando acessar a região crítica...\n");
+    sleep(1);
   }
+  printf("Processo acessou a região crítica.\n");
+
   sleep(k);
 
   snprintf(
@@ -79,10 +87,17 @@ int sendRequest (int socket, int pid, int k) {
   );
 
   client_message_status = send(socket, client_buffer, strlen(client_buffer)+1, 0);
+
+  if (client_message_status == -1) {
+    printf("Erro ao enviar release do client.\n");
+    return -1;
+  }
+
+  return 0;
 }
 
 void writeResult(int pid) {
-  char filename[] = "result.txt";
+  char filename[] = "resultados.txt";
   FILE* ptr;
   ptr = fopen(filename, "a");
 
@@ -143,9 +158,11 @@ int main(int argc, char* argv[]) {
     int socket = connectSocket();
 
     if (socket < 0) {
+      printf("Erro na conexão do socket.\n");
       return -1;
     }
 
+    printf("Entrando no loop de requisições.\n");
     // Loop de requisições 
     for (int i = 0; i < r; i++) {
       pid_t process_pid = getpid();

@@ -24,8 +24,6 @@ char *ip = "127.0.0.1";
 int max_connections = 1;
 int message_type_size = 8;
 int ongoing_connections = 0;
-int n;
-int r;
 int k;
 
 // Semáforo para coordenação e sincronização
@@ -158,6 +156,7 @@ void process_header(int** message_header) {
 }
 
 void handle_message(int client_socket) {
+    printf("Recebendo e lidando com a mensagem do cliente.\n");
     int client_message_status;
     int pid;
 
@@ -165,12 +164,14 @@ void handle_message(int client_socket) {
     memset(server_buffer, '\0', sizeof(server_buffer));
     memset(client_buffer, '\0', sizeof(client_buffer));
 
+    printf("Feita limpeza dos buffers.\n");
     // Recebe mensagem do cliente
     client_message_status = recv(client_socket, client_buffer, sizeof(client_buffer), 0);
     if (client_message_status == -1) {
         printf("Erro ao receber mensagem do client.\n");
         exit(1);
     }
+    printf("Recebida mensagem do cliente.\n");
 
     int* message_header[3]; 
     int** output = write_log(client_buffer);
@@ -181,17 +182,13 @@ void handle_message(int client_socket) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 4) {
+    if (argc != 2) {
         printf("Número incorreto de parâmetros passados. Encerrando programa.\n");
         return 1;
     }
     else {
-        // n -> Número de processos que querem entrar na região crítica
-        // r -> Quantidade de repetições de acesso à região crítica
         // k -> Segundos em que processo deve permanecer na região crítica
-        n = atoi(argv[1]);
-        r = atoi(argv[2]);
-        k = atoi(argv[3]);
+        k = atoi(argv[1]);
 
         // Inicializando semáforo
         sem_init(&mutex, 0, 1);
