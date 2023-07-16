@@ -12,22 +12,26 @@
 #include <semaphore.h>
 #include "queue.c"
 
+#define BUFFER_SIZE 2000
+
 // Declaração de variáveis
-int buffer_size = 2000;
 int server_socket, client_socket, client_size;
-char server_buffer[buffer_size], client_buffer[buffer_size];
+char server_buffer[BUFFER_SIZE], client_buffer[BUFFER_SIZE];
 struct sockaddr_in server_address, client_address;
 int port = 8080;
 char *ip = "127.0.0.1";
 int max_connections = 1;
 int message_type_size = 8;
 int ongoing_connections = 0;
+int n;
+int r;
+int k;
 
 // Semáforo para coordenação e sincronização
 sem_t mutex;
 
 // Inicializando fila de sockets
-note_t *socket_queue = NULL;
+node_t *socket_queue = NULL;
 
 void write_log(int pid, char* message) {
     char filename[] = "log.txt";
@@ -39,8 +43,8 @@ void write_log(int pid, char* message) {
         exit(1);
     }
 
-    char pid_str[buffer_size];
-    snprintf(pid_str, buffer_size, "%d", pid); // copy int pid to char pid_str
+    char pid_str[BUFFER_SIZE];
+    snprintf(pid_str, BUFFER_SIZE, "%d", pid); // copy int pid to char pid_str
 
     char message_type[message_type_size];
     if (message == "1") {
@@ -63,7 +67,7 @@ void write_log(int pid, char* message) {
 }
 
 void handle_message(int client_socket) {
-    int client_message;
+    int client_message_status;
     int pid;
 
     // // Limpeza do buffer
@@ -71,17 +75,18 @@ void handle_message(int client_socket) {
     memset(client_buffer, '\0', sizeof(client_buffer));
 
     // Recebe mensagem do cliente
-    client_message = recv(client_socket, client_buffer, sizeof(client_buffer), 0);
-    if (client_message == -1) {
+    client_message_status = recv(client_socket, client_buffer, sizeof(client_buffer), 0);
+    if (client_message_status == -1) {
         printf("Erro ao receber mensagem do client.\n");
-        return -1;
+        exit(1);
     }
 
-    pid = getpid(void);
-    write_log(pid, client_message);
+    pid = getpid();
+    write_log(pid, client_buffer);
 }
 
-void* handle_connection(void* ptr_client_socket, int k) {
+// void* handle_connection(int pid, void* ptr_client_socket, int k) {
+void* handle_connection(void* ptr_client_socket) {
     int client_socket = *((int*) ptr_client_socket);
     free(ptr_client_socket);
 
@@ -96,12 +101,15 @@ void* handle_connection(void* ptr_client_socket, int k) {
         exit(1);
     }
 
+    // char pid_str[BUFFER_SIZE];
+    // snprintf(pid_str, BUFFER_SIZE, "%d", pid); // copy int pid to char pid_str
+
     time_t current_time = time(NULL);
     char * current_time_str = ctime(&current_time);
     current_time_str[strlen(current_time_str)-1] = '\0';
     printf("Current Time : %s\n", current_time_str);
 
-    fprintf(ptr, "Processo: %s\n", pid_str);
+    // fprintf(ptr, "Processo: %s\n", pid_str);
     fprintf(ptr, "Hora: %.*s; ", 8, current_time_str + strlen(current_time_str) - 13);
     
     sem_post(&mutex);
@@ -137,18 +145,12 @@ int main(int argc, char* argv[]) {
         // n -> Número de processos que querem entrar na região crítica
         // r -> Quantidade de repetições de acesso à região crítica
         // k -> Segundos em que processo deve permanecer na região crítica
-        int n = atoi(argv[1]);
-        int r = atoi(argv[2]);
-        int k = atoi(argv[3]);
+        n = atoi(argv[1]);
+        r = atoi(argv[2]);
+        k = atoi(argv[3]);
 
         // Inicializando semáforo
         sem_init(&mutex, 0, 1);
-
-        // Inicializando fila de sockets
-        note_t *socket_queue = NULL;
-
-        // Número de conexões em execução no momento
-        int ongoing_connections = 0;
 
         // Criação do socket
         server_socket = socket(AF_INET, SOCK_STREAM, 0);
