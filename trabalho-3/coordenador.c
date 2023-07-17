@@ -17,6 +17,7 @@
 // Comando para executar: ./coordenador (parâmetro 1 - k)
 
 #define BUFFER_SIZE 2000
+#define MESSAGE_SIZE 20
 
 // Declaração de variáveis
 int server_socket, client_socket, client_size;
@@ -112,7 +113,6 @@ void* handle_connection(void* ptr_client_socket) {
     fprintf(ptr, "Processo: %s\n", pid_str);
     fprintf(ptr, "Hora: %.*s; ", 8, current_time_str + strlen(current_time_str) - 13);
     printf("Escrito no arquivo resultados.txt com sucesso.\n");
-    
     sem_post(&mutex);
     printf("Mutex liberado.\n");
 
@@ -140,13 +140,13 @@ void start_connection(int** message_header) {
     printf("Buffer do servidor limpo.\n");
 
     // Preparando mensagem de grant
-    char pid_str[10];
+    char pid_str[MESSAGE_SIZE];
     // strcpy(pid_str, (*message_header)[1]);
     // strcpy(pid_str, message_header[1]);
     int pid = message_header[1];
-    snprintf(pid_str, 10, "%d", pid); // copy int x to char y
+    snprintf(pid_str, MESSAGE_SIZE, "%d", pid); // copy int x to char y
     printf("Criada versão str do pid do client_socket.\n");
-    char message[10] = "2|";
+    char message[MESSAGE_SIZE] = "2|";
     strcat(message, pid_str);
     strcat(message, "|");
     printf("Incluído pid na mensagem de grant.\n");
@@ -159,12 +159,14 @@ void start_connection(int** message_header) {
     client_socket = message_header[0];
     int server_message_status;
     print_header(message_header);
-    printf("Mensagem de grant: %s.\n" server_buffer);
+    printf("Mensagem de grant: %s.\n", server_buffer);
     server_message_status = send(client_socket, server_buffer, sizeof(server_buffer), 0);
     if (server_message_status == -1) {
         printf("Erro ao enviar mensagem do server.\n");
     }
+
     printf("Mensagem de grant enviada.\n");
+    printf("%s\n", server_buffer);
 }
 
 void process_header(int** message_header) {
@@ -178,6 +180,7 @@ void process_header(int** message_header) {
         if (ongoing_connections < max_connections) {
             start_connection(message_header);
         }
+        printf("Finalizou process_header.\n");
     // } else if (*message_header[2] == 3) { // Release
     } else if (message_header[2] == 3) { // Release
         printf("Release message.\n");
@@ -218,6 +221,7 @@ void handle_message(int client_socket) {
     message_header[1] = output[0];
     message_header[2] = output[1];
     process_header(&message_header);
+    printf("Finalizou handle_message.\n");
 }
 
 int main(int argc, char* argv[]) {
@@ -266,6 +270,7 @@ int main(int argc, char* argv[]) {
             printf("Conexão estabelecida com sucesso.\n");
 
             handle_message(client_socket);
+            printf("Finalizou main.\n");
         }
         return 0;
     }

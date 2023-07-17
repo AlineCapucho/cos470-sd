@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <time.h>
 
+// Comando para compilar: gcc -std=c17 -pthread client.c -o client 
+// Comando para executar: ./client (parâmetro 1 - r) (parâmetro 2 - k)
+
 #define BUFFER_SIZE 2000
 #define MESSAGE_SIZE 20
 
@@ -55,7 +58,7 @@ char* createMessage(int code, int pid) {
   printf("Point 4.\n");
   strcat(messageBuffer, separator);
   printf("Point 5.\n");
-  sprintf((char*)messageBuffer,"%s%0*d", messageBuffer, MESSAGE_SIZE - strlen(messageBuffer), 0);
+  sprintf((char*)messageBuffer, "%s%0*d", messageBuffer, MESSAGE_SIZE - strlen(messageBuffer) - 1, 0);
   printf("Point 6.\n");
 
   printf("Mensagem criada.\n");
@@ -95,10 +98,17 @@ int sendRequest (int socket, int pid, int k) {
     return -1;
   }
 
-  while(server_buffer[0] != grantCode) {
+  while(server_buffer[0] != "2") {
+    int server_message_status = recv(socket, server_buffer, sizeof(server_buffer), 0);
+
+    if (server_message_status == -1) {
+      printf("Erro ao receber mensagem do server.\n");
+      return -1;
+    }
+
     printf("Processo tentando acessar a região crítica...\n");
-    sleep(1);
   }
+
   printf("Processo acessou a região crítica.\n");
 
   sleep(k);
