@@ -33,3 +33,17 @@ int split(const char *txt, char delim, char ***tokens)
     free(tklen);
     return count;
 }
+
+void print_message_tokens(char** message_tokens) {
+    printf("Imprimindo message tokens.\n");
+    for (int i = 0; i < 3; ++i) {
+        printf("%s\n", message_tokens[i]);
+    }
+}
+
+void print_header(int** header) {
+    printf("Imprimindo header.\n");
+    for (int i = 0; i < 3; ++i) {
+        printf("%d\n", header[i]);
+    }
+}

@@ -4,6 +4,8 @@
 #include <time.h>
 #include <string.h>
 
+#define BUFFER_SIZE 2000
+
 // Declaração de variáveis
 int buffer_size = 1024;
 
@@ -101,6 +103,11 @@ int main () {
     // count = split(str, ',', &tokens);
     // for (i = 0; i < count; i++) {
     //     printf ("%s\n", tokens[i]);
+    //     printf ("%s\n", tokens[i]);
+    // }
+
+    // for (i = 0; i < count; i++) {
+    //     printf ("%s\n", tokens[i]);
     // }
 
     // /* freeing tokens */
@@ -111,15 +118,45 @@ int main () {
 
     // return 0;
 
-    char file_frame[100] = "shots";
-    char fout[100];
-    sprintf((char*)fout,"%s%0*d", file_frame, 10 - strlen(file_frame), 0);
+    // char file_frame[100] = "shots";
+    // char fout[100];
+    // sprintf((char*)fout,"%s%0*d", file_frame, 10 - strlen(file_frame), 0);
 
-    char message[10] = "2|";
-    strcat(message, "251");
-    sprintf((char*)message,"%s%0*d", message, 10 - strlen(message), 0);
+    // char message[10] = "2|";
+    // strcat(message, "251");
+    // sprintf((char*)message,"%s%0*d", message, 10 - strlen(message), 0);
 
-    printf("%s\n", file_frame);
-    printf("%s\n", fout);
-    printf("%s\n", message);
+    // printf("%s\n", file_frame);
+    // printf("%s\n", fout);
+    // printf("%s\n", message);
+
+    // int requestCode = 1;
+    // int pid = 14;
+    // char separator[] = "|";
+    // char* messageBuffer = malloc(BUFFER_SIZE);
+    // memset(messageBuffer, '0', BUFFER_SIZE);
+
+    // char requestCode_str[10];
+    // snprintf(requestCode_str, 10, "%d", requestCode); // copy int x to char y
+    // printf("Point 0.\n");
+    // char pid_str[10];
+    // snprintf(pid_str, 10, "%d", pid); // copy int x to char y
+    // printf("Point 1.\n");
+    // char* message = malloc(10);
+    // printf("Point 2.\n");
+    // strcat(message, requestCode_str);
+    // printf("Point 3.\n");
+    // strcat(message, separator);
+    // printf("Point 4.\n");
+    // strcat(message, pid_str);
+    // strcat(message, separator);
+    // printf("Point 5.\n");
+    // sprintf((char*)message,"%s%0*d", message, 10 - strlen(message), 0);
+    // printf("Point 6.\n");
+
+    // printf("%s\n", message);
+
+    char num[] = "1";
+    int n = atoi(num);
+    printf("%d\n", n);
 }

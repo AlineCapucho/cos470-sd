@@ -50,6 +50,8 @@ int* write_log(char* message) {
     char **message_tokens;
     int count = split(message, '|', &message_tokens);
 
+    print_message_tokens(message_tokens);
+
     char pid_str[BUFFER_SIZE];
     strcpy(pid_str, message_tokens[1]);
 
@@ -74,7 +76,9 @@ int* write_log(char* message) {
 
     int* message_header = malloc(sizeof(int) * 2);
     message_header[0] = atoi(pid_str); // pid
-    message_header[1] = (int) (message_tokens[0] - '0'); // message_type
+    message_header[1] = atoi(message_tokens[0]); // message_type
+    printf("%d\n", message_header[0]);
+    printf("%d\n", message_header[1]);
     return message_header;
 }
 
@@ -144,14 +148,16 @@ void start_connection(int** message_header) {
 
 void process_header(int** message_header) {
     printf("Processando o header da mensagem.\n");
-    if (*message_header[2] == 1) { // Request
+    // if (*message_header[2] == 1) { // Request
+    if (*message_header[0] == 1) { // Request
         printf("Request message.\n");
         enqueue(&socket_queue, *message_header[0]);
         enqueue(&socket_queue_pid, *message_header[1]);
         if (ongoing_connections < max_connections) {
             start_connection(message_header);
         }
-    } else if (*message_header[2] == 3) { // Release
+    // } else if (*message_header[2] == 3) { // Release
+    } else if (*message_header[0] == 3) { // Release
         printf("Release message.\n");
         --ongoing_connections;
         int* start_connection_message_header[3];
@@ -160,6 +166,7 @@ void process_header(int** message_header) {
         start_connection(start_connection_message_header);
     } else {
         printf("Erro ao processar header da mensagem.\n");
+        print_header(message_header);
         exit(1);
     }
 }

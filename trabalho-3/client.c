@@ -12,6 +12,7 @@
 #include <time.h>
 
 #define BUFFER_SIZE 2000
+#define MESSAGE_SIZE 20
 
 // Declaração de variáveis
 int client_socket;
@@ -25,24 +26,46 @@ int grantCode = 2;
 int releaseCode = 3;
 
 char* createMessage(int code, int pid) {
-  char separator = '|';
-  char* messageBuffer = malloc(BUFFER_SIZE);
-  memset(messageBuffer, '0', BUFFER_SIZE);
+  printf("Criando mensagem.\n");
+  char separator[] = "|";
+  char* messageBuffer = malloc(MESSAGE_SIZE);
+  memset(messageBuffer, '\0', MESSAGE_SIZE);
 
-  snprintf(
-    messageBuffer, 
-    BUFFER_SIZE, 
-    "%d%c%d%c", 
-    requestCode,
-    separator,
-    pid,
-    separator
-  );
+  // snprintf(
+  //   messageBuffer, 
+  //   BUFFER_SIZE, 
+  //   "%d%c%d%c", 
+  //   requestCode,
+  //   separator,
+  //   pid,
+  //   separator
+  // );
+
+  char requestCode_str[MESSAGE_SIZE];
+  snprintf(requestCode_str, MESSAGE_SIZE, "%d", requestCode); // copy int x to char y
+  printf("Point 0.\n");
+  char pid_str[MESSAGE_SIZE];
+  snprintf(pid_str, MESSAGE_SIZE, "%d", pid); // copy int x to char y
+  printf("Point 1.\n");
+  strcat(messageBuffer, requestCode_str);
+  printf("Point 2.\n");
+  strcat(messageBuffer, separator);
+  printf("Point 3.\n");
+  strcat(messageBuffer, pid_str);
+  printf("Point 4.\n");
+  strcat(messageBuffer, separator);
+  printf("Point 5.\n");
+  sprintf((char*)messageBuffer,"%s%0*d", messageBuffer, MESSAGE_SIZE - strlen(messageBuffer), 0);
+  printf("Point 6.\n");
+
+  printf("Mensagem criada.\n");
+  printf("%s\n", messageBuffer);
   
   return messageBuffer;
 }
 
 int sendRequest (int socket, int pid, int k) {
+  printf("Enviando mensagem.\n");
   memset(client_buffer, '\0', BUFFER_SIZE);
   memset(server_buffer, '\0', BUFFER_SIZE);
 
@@ -63,6 +86,7 @@ int sendRequest (int socket, int pid, int k) {
     printf("Erro ao enviar request do client.\n");
     return -1;
   }
+  printf("Mensagem enviada.\n");
 
   int server_message_status = recv(socket, server_buffer, sizeof(server_buffer), 0);
 
@@ -97,6 +121,7 @@ int sendRequest (int socket, int pid, int k) {
 }
 
 void writeResult(int pid) {
+  printf("Escrevendo resultado.\n");
   char filename[] = "resultados.txt";
   FILE* ptr;
   ptr = fopen(filename, "a");
@@ -117,6 +142,7 @@ void writeResult(int pid) {
   fprintf(ptr, "Hora: %.*s; ", 8, current_time_str + strlen(current_time_str) - 13);
   fprintf(ptr, "Processo: %s\n", pid_str);
   fclose(ptr);
+  printf("Resultado escrito.\n");
 }
 
 int connectSocket() {
