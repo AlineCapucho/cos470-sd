@@ -123,20 +123,32 @@ void start_connection(int** message_header) {
     // Gerando uma thread para a conexão do socket
     pthread_t t;
     int *ptr_client = malloc(sizeof(int));
-    *ptr_client = (*message_header)[0];
+    printf("Gerando pointer para client_socket.\n");
+    // *ptr_client = (*message_header)[0];
+    ptr_client = message_header[0];
+    printf("Atribuindo valor de client_socket ao pointer.\n");
     pthread_create(&t, NULL, handle_connection, ptr_client);
+    printf("Thread executando handle_connection criada.\n");
 
     // Limpeza do buffer do servidor
     memset(server_buffer, '\0', sizeof(server_buffer));
+    printf("Buffer do servidor limpo.\n");
 
     // Preparando mensagem de grant
     char pid_str[10];
-    strcpy(pid_str, (*message_header)[1]);
+    // strcpy(pid_str, (*message_header)[1]);
+    // strcpy(pid_str, message_header[1]);
+    int pid = message_header[1];
+    snprintf(pid_str, 10, "%d", pid); // copy int x to char y
+    printf("Criada versão str do pid do client_socket.\n");
     char message[10] = "2|";
     strcat(message, pid_str);
     strcat(message, "|");
+    printf("Incluído pid na mensagem de grant.\n")
     sprintf((char*)message,"%s%0*d", message, 10 - strlen(message), 0);
+    printf("Adicionado padding na mensagem de grant.\n");
     strcpy(server_buffer,  message);
+    printf("Mensagem de grant preparada.\n");
 
     // Enviando mensagem de grant
     int server_message_status;
@@ -144,20 +156,22 @@ void start_connection(int** message_header) {
     if (server_message_status == -1) {
         printf("Erro ao enviar mensagem do server.\n");
     }
+    printf("Mensagem de grant enviada.\n");
 }
 
 void process_header(int** message_header) {
     printf("Processando o header da mensagem.\n");
+    print_header(message_header);
     // if (*message_header[2] == 1) { // Request
-    if (*message_header[0] == 1) { // Request
+    if (message_header[2] == 1) { // Request
         printf("Request message.\n");
-        enqueue(&socket_queue, *message_header[0]);
-        enqueue(&socket_queue_pid, *message_header[1]);
+        enqueue(&socket_queue, message_header[0]);
+        enqueue(&socket_queue_pid, message_header[1]);
         if (ongoing_connections < max_connections) {
             start_connection(message_header);
         }
     // } else if (*message_header[2] == 3) { // Release
-    } else if (*message_header[0] == 3) { // Release
+    } else if (message_header[2] == 3) { // Release
         printf("Release message.\n");
         --ongoing_connections;
         int* start_connection_message_header[3];
