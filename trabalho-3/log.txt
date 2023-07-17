@@ -26,3 +26,17 @@ Hora: 18:28:11; Mensagem: ; Processo: 182538
 Hora: 18:29:41; Mensagem: ; Processo: 182862
 Hora: 18:32:01; Mensagem: ; Processo: 184105
 Hora: 18:34:08; Mensagem: ; Processo: 184785
+Hora: 19:16:33; Mensagem: ; Processo: 194117
+Hora: 19:20:31; Mensagem: ; Processo: 194507
+Hora: 19:24:47; Mensagem: ; Processo: 195664
+Hora: 19:29:05; Mensagem: ; Processo: 196053
+Hora: 19:30:42; Mensagem: ; Processo: 196486
+Hora: 19:32:33; Mensagem: ; Processo: 196809
+Hora: 19:35:15; Mensagem: ; Processo: 197216
+Hora: 19:36:53; Mensagem: ; Processo: 197726
+Hora: 19:38:41; Mensagem: ; Processo: 198689
+Hora: 19:41:02; Mensagem: ; Processo: 199988
+Hora: 19:43:12; Mensagem: ; Processo: 200698
+Hora: 19:45:16; Mensagem: ; Processo: 201145
+Hora: 19:47:01; Mensagem: ; Processo: 201456
+Hora: 19:48:45; Mensagem: ; Processo: 202660

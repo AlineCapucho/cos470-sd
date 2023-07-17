@@ -87,6 +87,7 @@ void* handle_connection(void* ptr_client_socket) {
     free(ptr_client_socket);
 
     sem_wait(&mutex);
+    printf("Mutex obtido.\n");
 
     char filename[] = "resultados.txt";
     FILE* ptr;
@@ -96,10 +97,12 @@ void* handle_connection(void* ptr_client_socket) {
         printf("Error opening file.\n");
         exit(1);
     }
+    printf("Arquivo resultados.txt aberto com sucesso.\n");
 
     int pid = get_headval(&socket_queue_pid);
     char pid_str[BUFFER_SIZE];
     snprintf(pid_str, BUFFER_SIZE, "%d", pid); // copy int x to char y
+    printf("Criada versão str do pid do client_socket.\n");
 
     time_t current_time = time(NULL);
     char * current_time_str = ctime(&current_time);
@@ -108,8 +111,10 @@ void* handle_connection(void* ptr_client_socket) {
 
     fprintf(ptr, "Processo: %s\n", pid_str);
     fprintf(ptr, "Hora: %.*s; ", 8, current_time_str + strlen(current_time_str) - 13);
+    printf("Escrito no arquivo resultados.txt com sucesso.\n");
     
     sem_post(&mutex);
+    printf("Mutex liberado.\n");
 
     fclose(ptr);
     sleep(k);
@@ -144,14 +149,17 @@ void start_connection(int** message_header) {
     char message[10] = "2|";
     strcat(message, pid_str);
     strcat(message, "|");
-    printf("Incluído pid na mensagem de grant.\n")
+    printf("Incluído pid na mensagem de grant.\n");
     sprintf((char*)message,"%s%0*d", message, 10 - strlen(message), 0);
     printf("Adicionado padding na mensagem de grant.\n");
-    strcpy(server_buffer,  message);
+    strcpy(server_buffer, message);
     printf("Mensagem de grant preparada.\n");
 
     // Enviando mensagem de grant
+    client_socket = message_header[0];
     int server_message_status;
+    print_header(message_header);
+    printf("Mensagem de grant: %s.\n" server_buffer);
     server_message_status = send(client_socket, server_buffer, sizeof(server_buffer), 0);
     if (server_message_status == -1) {
         printf("Erro ao enviar mensagem do server.\n");

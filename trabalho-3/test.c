@@ -156,7 +156,12 @@ int main () {
 
     // printf("%s\n", message);
 
-    char num[] = "1";
-    int n = atoi(num);
-    printf("%d\n", n);
+    // char num[] = "1";
+    // int n = atoi(num);
+    // printf("%d\n", n);
+
+    int pid = 125421;
+    char pid_str[10];
+    snprintf(pid_str, 10, "%d", pid); // copy int x to char y
+    printf("%s\n", pid_str);
 }

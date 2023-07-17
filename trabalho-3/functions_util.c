@@ -43,7 +43,10 @@ void print_message_tokens(char** message_tokens) {
 
 void print_header(int** header) {
     printf("Imprimindo header.\n");
-    for (int i = 0; i < 3; ++i) {
-        printf("%d\n", header[i]);
-    }
+    printf("Client_socket: %d.\n", header[0]);
+    printf("Pid: %d.\n", header[1]);
+    printf("Message_type: %d.\n", header[2]);
+    // for (int i = 0; i < 3; ++i) {
+    //     printf("%d\n", header[i]);
+    // }
 }
