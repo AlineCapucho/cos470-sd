@@ -2,11 +2,6 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-// as que sao usadas no trabalho de sockets e
-// não importei são essas daqui, caso apareça
-// estar faltando algo, descomentar elas
-// #include <stdbool.h>
-// #include <errno.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <time.h>
@@ -14,7 +9,7 @@
 // Comando para compilar: gcc -std=c17 client.c -o client 
 // Comando para executar: ./client (parâmetro 1 - r) (parâmetro 2 - k)
 
-#define BUFFER_SIZE 2000
+#define BUFFER_SIZE 1024
 #define MESSAGE_SIZE 20
 
 // Declaração de variáveis
@@ -28,54 +23,41 @@ int requestCode = 1;
 int grantCode = 2;
 int releaseCode = 3;
 
-char* createMessage(int code, int pid) {
-  printf("Criando mensagem.\n");
+char* create_message(int code, int pid) {
   char separator[] = "|";
-  char* messageBuffer = malloc(MESSAGE_SIZE);
-  memset(messageBuffer, '\0', MESSAGE_SIZE);
+  char* message_buffer = malloc(MESSAGE_SIZE);
+  memset(message_buffer, '\0', MESSAGE_SIZE);
 
   char requestCode_str[MESSAGE_SIZE];
-  snprintf(requestCode_str, MESSAGE_SIZE, "%d", requestCode); // copy int x to char y
+  snprintf(requestCode_str, MESSAGE_SIZE, "%d", requestCode);
   char pid_str[MESSAGE_SIZE];
-  snprintf(pid_str, MESSAGE_SIZE, "%d", pid); // copy int x to char y
-  strcat(messageBuffer, requestCode_str);
-  strcat(messageBuffer, separator);
-  strcat(messageBuffer, pid_str);
-  strcat(messageBuffer, separator);
-  sprintf((char*)messageBuffer, "%s%0*d", messageBuffer, MESSAGE_SIZE - strlen(messageBuffer) - 1, 0);
+  snprintf(pid_str, MESSAGE_SIZE, "%d", pid);
+  strcat(message_buffer, requestCode_str);
+  strcat(message_buffer, separator);
+  strcat(message_buffer, pid_str);
+  strcat(message_buffer, separator);
+  sprintf((char*)message_buffer, "%s%0*d", message_buffer, MESSAGE_SIZE - strlen(message_buffer) - 1, 0);
 
-  printf("Mensagem criada.\n");
-  printf("%s\n", messageBuffer);
+  printf("Mensagem criada: %s.\n", message_buffer);
   
-  return messageBuffer;
+  return message_buffer;
 }
 
-int sendRequest (int socket, int pid, int k) {
-  printf("Enviando mensagem.\n");
+int send_request (int socket, int pid, int k) {
   memset(client_buffer, '\0', BUFFER_SIZE);
   memset(server_buffer, '\0', BUFFER_SIZE);
 
-  // criar mensagem com 
-  // o código do request + separadores + padding
-  snprintf(
-    client_buffer,
-    BUFFER_SIZE,
-    "%s",
-    createMessage(requestCode, pid)
-  );
+  snprintf(client_buffer, BUFFER_SIZE, "%s", create_message(requestCode, pid));
 
   int client_message_status;
 
-  // tentar enviar mensagem ao servidor
   client_message_status = send(socket, client_buffer, sizeof(client_buffer), 0);
   if (client_message_status == -1) {
     printf("Erro ao enviar request do client.\n");
     return -1;
   }
-  printf("Mensagem enviada.\n");
 
   int server_message_status = recv(socket, server_buffer, sizeof(server_buffer), 0);
-
   if (server_message_status == -1) {
     printf("Erro ao receber mensagem do server.\n");
     return -1;
@@ -87,15 +69,9 @@ int sendRequest (int socket, int pid, int k) {
     sleep(k);
   }
 
-  snprintf(
-    client_buffer,
-    BUFFER_SIZE,
-    "%s",
-    createMessage(releaseCode, pid)
-  );
+  snprintf(client_buffer, BUFFER_SIZE, "%s", create_message(releaseCode, pid));
 
   client_message_status = send(socket, client_buffer, strlen(client_buffer)+1, 0);
-
   if (client_message_status == -1) {
     printf("Erro ao enviar release do client.\n");
     return -1;
@@ -104,8 +80,7 @@ int sendRequest (int socket, int pid, int k) {
   return 0;
 }
 
-void writeResult(int pid) {
-  printf("Escrevendo resultado.\n");
+void write_result(int pid) {
   char filename[] = "resultados.txt";
   FILE* ptr;
   ptr = fopen(filename, "a");
@@ -126,10 +101,10 @@ void writeResult(int pid) {
   fprintf(ptr, "Hora: %.*s; ", 8, current_time_str + strlen(current_time_str) - 13);
   fprintf(ptr, "Processo: %s\n", pid_str);
   fclose(ptr);
-  printf("Resultado escrito.\n");
+  printf("Arquivo resultados.txt atualizado.\n");
 }
 
-int connectSocket() {
+int connect_socket() {
   // Criação do socket
   client_socket = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -165,7 +140,7 @@ int main(int argc, char* argv[]) {
     int r = atoi(argv[1]);
     int k = atoi(argv[2]);
 
-    int socket = connectSocket();
+    int socket = connect_socket();
 
     if (socket < 0) {
       printf("Erro na conexão do socket.\n");
@@ -176,14 +151,14 @@ int main(int argc, char* argv[]) {
     // Loop de requisições 
     for (int i = 0; i < r; i++) {
       pid_t process_pid = getpid();
-      int request = sendRequest(socket, process_pid, k);
+      int request = send_request(socket, process_pid, k);
 
       if (request < 0) {
         printf("Erro ao enviar request.\n");
         return -1;
       }
 
-      writeResult(process_pid);
+      write_result(process_pid);
     }
 
     close(socket);

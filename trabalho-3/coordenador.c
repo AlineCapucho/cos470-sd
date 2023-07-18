@@ -16,7 +16,7 @@
 // Comando para compilar: gcc -std=c17 -pthread coordenador.c -o coordenador 
 // Comando para executar: ./coordenador (parâmetro 1 - k)
 
-#define BUFFER_SIZE 2000
+#define BUFFER_SIZE 1024
 #define MESSAGE_SIZE 20
 
 // Declaração de variáveis
