@@ -172,7 +172,6 @@ void start_connection(int** message_header) {
 void process_header(int** message_header) {
     printf("Processando o header da mensagem.\n");
     print_header(message_header);
-    // if (*message_header[2] == 1) { // Request
     if (message_header[2] == 1) { // Request
         printf("Request message.\n");
         enqueue(&socket_queue, message_header[0]);
@@ -181,7 +180,6 @@ void process_header(int** message_header) {
             start_connection(message_header);
         }
         printf("Finalizou process_header.\n");
-    // } else if (*message_header[2] == 3) { // Release
     } else if (message_header[2] == 3) { // Release
         printf("Release message.\n");
         --ongoing_connections;
