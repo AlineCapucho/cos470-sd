@@ -24,7 +24,7 @@ for n in "${N[@]}"; do
   rm resultado.txt
 done
 
-teste 1
+# teste 1
 declare -a N=("2" "4" "8" "16" "32")
 R="10"
 K="2"
